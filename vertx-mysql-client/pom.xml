@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.vertx</groupId>
     <artifactId>vertx-sql-client-parent</artifactId>
-    <version>4.2.7</version>
+    <version>4.2.7-SQL1225</version>
   </parent>
 
   <artifactId>vertx-mysql-client</artifactId>
@@ -58,6 +58,7 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-sql-client</artifactId>
+      <version>4.2.7-SQL1225</version>
     </dependency>
 
     <!-- Testing purposes -->
@@ -71,6 +72,7 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-sql-client</artifactId>
+      <version>4.2.7-SQL1225</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
