@@ -14,11 +14,14 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.oracleclient.impl.OracleConnectionUriParser;
 import io.vertx.sqlclient.SqlConnectOptions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -51,6 +54,7 @@ public class OracleConnectOptions extends SqlConnectOptions {
   private String tnsAlias;
   private String tnsAdmin;
   private boolean ssl;
+  private List<HostAndPort> additionalHosts;
 
   public OracleConnectOptions() {
     super();
@@ -69,6 +73,12 @@ public class OracleConnectOptions extends SqlConnectOptions {
     this.tnsAlias = other.tnsAlias;
     this.tnsAdmin = other.tnsAdmin;
     this.ssl = other.ssl;
+    if (other.additionalHosts != null) {
+      additionalHosts = new ArrayList<>(other.additionalHosts.size());
+      for (HostAndPort additionalHost : other.additionalHosts) {
+        additionalHosts.add(HostAndPort.create(additionalHost.host(), additionalHost.port()));
+      }
+    }
   }
 
   public OracleConnectOptions(SqlConnectOptions options) {
@@ -205,6 +215,38 @@ public class OracleConnectOptions extends SqlConnectOptions {
    */
   public OracleConnectOptions setTnsAdmin(String tnsAdmin) {
     this.tnsAdmin = tnsAdmin;
+    return this;
+  }
+
+  /**
+   * @return a list of additional database servers to use for load balancing
+   */
+  public List<HostAndPort> getAdditionalHosts() {
+    return additionalHosts;
+  }
+
+  /**
+   * Set a list of additional database servers to use for load balancing.
+   *
+   * @param additionalHosts the list of additional database servers
+   * @return a reference to this, so the API can be used fluently
+   */
+  public OracleConnectOptions setAdditionalHosts(List<HostAndPort> additionalHosts) {
+    this.additionalHosts = additionalHosts;
+    return this;
+  }
+
+  /**
+   * Set a list of additional database servers to use for load balancing.
+   *
+   * @param additionalHost the list of additional database servers
+   * @return a reference to this, so the API can be used fluently
+   */
+  public OracleConnectOptions addAdditionalHost(HostAndPort additionalHost) {
+    if (additionalHosts == null) {
+      additionalHosts = new ArrayList<>();
+    }
+    additionalHosts.add(additionalHost);
     return this;
   }
 
