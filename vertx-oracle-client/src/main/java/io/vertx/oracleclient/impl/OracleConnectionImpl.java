@@ -20,6 +20,7 @@ import io.vertx.oracleclient.spi.OracleDriver;
 import io.vertx.sqlclient.impl.Connection;
 import io.vertx.sqlclient.impl.SqlConnectionBase;
 import io.vertx.sqlclient.spi.ConnectionFactory;
+import oracle.jdbc.internal.OracleArray;
 
 public class OracleConnectionImpl extends SqlConnectionBase<OracleConnectionImpl> implements OracleConnection {
 
@@ -31,5 +32,10 @@ public class OracleConnectionImpl extends SqlConnectionBase<OracleConnectionImpl
     ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
     OracleConnectionFactory client = new OracleConnectionFactory(ctx.owner());
     return prepareForClose(ctx, client.connect(ctx, options)).map(OracleConnection::cast);
+  }
+
+  @Override
+  public Object createArray(String typeName, Object elements) {
+    return ((OracleJdbcConnection) conn.unwrap()).createArray(typeName, elements);
   }
 }
