@@ -37,8 +37,8 @@ public class OracleArrayTest extends OracleTestBase {
   public void testStringArray(TestContext ctx) {
     String[] elements = {"str1", "str2", "str3"};
     pool.withConnection(conn -> {
-      Object stringsArray = ((OracleConnection)conn).createArray( "StringArrayType", elements );
-      String insertSql = "INSERT INTO StringsArrayTable( id, stringsArray) VALUES (?, ?)";
+      Object stringsArray = ((OracleConnection)conn).createArray( "STRINGARRAYTYPE", elements );
+      String insertSql = "INSERT INTO StringsArrayTable( id, stringarrayelement) VALUES (?, ?)";
       return conn.preparedQuery( insertSql ).execute( Tuple.of(1, stringsArray) );
     }).onComplete( ctx.asyncAssertSuccess() );
   }
