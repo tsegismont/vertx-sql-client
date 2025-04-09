@@ -44,6 +44,10 @@ import java.util.stream.Collectors;
  */
 public class SqlConnectionPool {
 
+  private static final Function<ContextInternal, ContextInternal> SAME_EVENT_LOOP_PROVIDER = ctx -> {
+    return ctx.owner().createEventLoopContext(ctx.nettyEventLoop(), null, Thread.currentThread().getContextClassLoader());
+  };
+
   private final Function<Context, Future<SqlConnection>> connectionProvider;
   private final VertxInternal vertx;
   private final ConnectionPool<PooledConnection> pool;
@@ -88,20 +92,9 @@ public class SqlConnectionPool {
       for (int i = 0; i < eventLoopSize; i++) {
         loops[i] = vertx.nettyEventLoopGroup().next();
       }
-      pool.contextProvider(new Function<ContextInternal, ContextInternal>() {
-        int idx = 0;
-
-        @Override
-        public ContextInternal apply(ContextInternal contextInternal) {
-          EventLoop loop = loops[idx++];
-          if (idx == loops.length) {
-            idx = 0;
-          }
-          return vertx.createEventLoopContext(loop, null, Thread.currentThread().getContextClassLoader());
-        }
-      });
+      pool.contextProvider(new MultiEventLoopProvider(loops));
     } else {
-      pool.contextProvider(ctx -> ctx.owner().createEventLoopContext(ctx.nettyEventLoop(), null, Thread.currentThread().getContextClassLoader()));
+      pool.contextProvider(SAME_EVENT_LOOP_PROVIDER);
     }
   }
 
@@ -258,6 +251,46 @@ public class SqlConnectionPool {
       }
     });
     return promise.future();
+  }
+
+  private static class MultiEventLoopProvider implements Function<ContextInternal, ContextInternal> {
+
+    static final int RESET = 100000;
+
+    final EventLoop[] loops;
+    final int[] counts;
+
+    MultiEventLoopProvider(EventLoop[] loops) {
+      this.loops = loops;
+      this.counts = new int[loops.length];
+    }
+
+    @Override
+    public ContextInternal apply(ContextInternal context) {
+      EventLoop loop;
+      synchronized (counts) {
+        int chosen = 0, count = counts[0];
+        for (int i = 1; i < counts.length; i++) {
+          int next = counts[i];
+          if (next < count || (next == count && loops[i] == context.nettyEventLoop())) {
+            chosen = i;
+            count = next;
+          }
+        }
+        count = counts[chosen] = counts[chosen] + 1;
+        loop = loops[chosen];
+        if (count == RESET + 1) {
+          reset();
+        }
+      }
+      return context.owner().createEventLoopContext(loop, null, Thread.currentThread().getContextClassLoader());
+    }
+
+    void reset() {
+      for (int i = 0; i < counts.length; i++) {
+        counts[i] = counts[i] - RESET;
+      }
+    }
   }
 
   public class PooledConnection implements Connection, Connection.Holder {
