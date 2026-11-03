@@ -34,12 +34,26 @@ jobs:
         with:
           java-version: ${{ inputs.jdk }}
           distribution: temurin
+      - name: DNS diagnostics (before tests)
+        run: bash .github/dns-diagnostics.sh
       - name: Build without tests
         run: |
           mvn -s .github/maven-ci-settings.xml -q clean install -B $PROFILE_ARG -pl :${{ inputs.module }} -am -DskipTests
+      - name: Netty DNS check (before tests)
+        continue-on-error: true
+        run: |
+          mvn -s .github/maven-ci-settings.xml -q -B dependency:build-classpath -Dmdep.outputFile=/tmp/cp.txt -pl :${{ inputs.module }}
+          java -ea -cp "$(cat /tmp/cp.txt)" .github/DnsCheck.java
       - name: Run tests for the target module
         run: |
           mvn -s .github/maven-ci-settings.xml verify -B -Pcheckstyle $PROFILE_ARG -pl :${{ inputs.module }}
+      - name: DNS diagnostics (after tests)
+        if: always()
+        run: bash .github/dns-diagnostics.sh
+      - name: Netty DNS check (after tests)
+        if: always()
+        continue-on-error: true
+        run: java -ea -cp "$(cat /tmp/cp.txt)" .github/DnsCheck.java
       - name: Upload jstack dumps
         if: always()
         uses: actions/upload-artifact@v4
